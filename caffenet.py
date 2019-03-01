@@ -602,6 +602,7 @@ class CaffeNet(nn.Module):
             if not lmap.has_key(lname):
                 i = i + 1
                 continue
+            print 'type of layer is ', ltype
             if ltype in ['Convolution', 'Deconvolution']:
                 print('load weights %s' % lname)
                 convolution_param = layer['convolution_param']
@@ -617,7 +618,7 @@ class CaffeNet(nn.Module):
                     self.models[lname].bias.data.copy_(torch.from_numpy(np.array(lmap[lname].blobs[1].data)))
                     #print("convlution %s has bias" % lname)
                 i = i + 1
-            elif ltype == 'BatchNorm':
+            elif ltype == 'BatchNorm' or ltype == 'BN':
                 print('load weights %s' % lname)
                 self.models[lname].running_mean.copy_(torch.from_numpy(np.array(lmap[lname].blobs[0].data) / lmap[lname].blobs[2].data[0]))
                 self.models[lname].running_var.copy_(torch.from_numpy(np.array(lmap[lname].blobs[1].data) / lmap[lname].blobs[2].data[0]))
@@ -728,7 +729,7 @@ class CaffeNet(nn.Module):
                 blob_width[tname] = (blob_width[bname] + 2*pad - kernel_size)/stride + 1
                 blob_height[tname] = (blob_height[bname] + 2*pad - kernel_size)/stride + 1
                 i = i + 1
-            elif ltype == 'BatchNorm':
+            elif ltype == 'BatchNorm' or ltype == 'BN':
                 momentum = 0.9
                 if layer.has_key('batch_norm_param') and layer['batch_norm_param'].has_key('moving_average_fraction'):
                     momentum = float(layer['batch_norm_param']['moving_average_fraction'])
