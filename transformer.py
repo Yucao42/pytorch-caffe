@@ -1,11 +1,12 @@
 # 2017.12.16 by xiaohang
 import sys
 from caffenet import *
-import numpy as np
 import argparse
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.nn.parameter import Parameter
+from functools import partial
+import pickle
 import time
 
 def create_network(protofile, weightfile):
@@ -14,13 +15,22 @@ def create_network(protofile, weightfile):
         net.cuda()
     print(net)
     net.load_weights(weightfile)
-    net.train()
     return net
+
+def modify(net):
+    state_dict = net.state_dict()
+    ts = set()
+    for k, v in state_dict.items():
+        ts.add(type(v))
+        if type(v) == torch.nn.modules.container.Sequential or type(v) == Concat:
+            del state_dict[k]
+    print('Type in the state_dict: ', ts)
+    return state_dict
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='convert caffe to pytorch')
-    parser.add_argument('--protofile', default='', type=str)
-    parser.add_argument('--weightfile', default='', type=str)
+    parser.add_argument('-p', '--protofile', default='', type=str)
+    parser.add_argument('-m', '--weightfile', default='', type=str)
     parser.add_argument('--cuda', action='store_true', help='enables cuda')
 
     args = parser.parse_args()
@@ -30,14 +40,6 @@ if __name__ == '__main__':
     weightfile = args.weightfile
 
     net = create_network(protofile, weightfile)
-    net.set_verbose(False)
-
-    for i in range(10):
-        blobs = net()
-        blob_names = blobs.keys()
-        for blob_name in blob_names:
-            if args.cuda:
-                blob_data = blobs[blob_name].data.cpu().numpy()
-            else:
-                blob_data = blobs[blob_name].data.numpy()
-            print('[%d] %-30s pytorch_shape: %-20s mean: %f' % (i, blob_name, blob_data.shape, blob_data.mean()))
+    ss  = modify(net)
+    torch.save(ss, args.weightfile + '.pth')
+    print("Save successfully ", args.weightfile + '.pth')
